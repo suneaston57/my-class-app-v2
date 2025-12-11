@@ -284,6 +284,7 @@ const SetupPanel = ({
     user, handleGoogleLogin, handleLogout
 }) => {
     
+    // 移除更名功能，僅保留刪除與成員管理
     const handleDeleteGroup = (e, group) => {
         e.stopPropagation();
         if(confirm(`確定刪除群組「${group.name}」嗎？這會同時移除所有學生的此群組標籤。`)) {
@@ -293,6 +294,7 @@ const SetupPanel = ({
 
     return (
     <div className="space-y-8">
+        {/* Auth Section */}
         <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h2 className="text-xl font-bold text-indigo-800 flex items-center"><School className="w-5 h-5 mr-2"/> 帳號同步</h2>
@@ -333,6 +335,7 @@ const SetupPanel = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* 1. 學生名單 */}
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                 <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-4 flex items-center">
                     <Users className="w-5 h-5 mr-2 text-indigo-500" /> 學生名單
@@ -363,6 +366,7 @@ const SetupPanel = ({
                 </div>
             </div>
 
+            {/* 2. 群組管理 */}
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                 <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-4 flex items-center">
                     <Tag className="w-5 h-5 mr-2 text-indigo-500" /> 群組管理
@@ -388,6 +392,7 @@ const SetupPanel = ({
                                 <button className="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 flex items-center" onClick={() => { setIsEditingGroup(g); setCurrentGroupStudents(g.members); }}>
                                     <Users className="w-3 h-3 mr-1"/> 成員
                                 </button>
+                                {/* 根據需求，移除更名按鈕，僅保留成員管理和刪除 */}
                                 <button className="text-sm bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" onClick={(e) => handleDeleteGroup(e, g)}>
                                     <Trash2 className="w-4 h-4"/>
                                 </button>
@@ -398,6 +403,7 @@ const SetupPanel = ({
             </div>
         </div>
 
+        {/* 3 & 4 items config */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                 <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-4 flex items-center"><TrendingUp className="w-5 h-5 mr-2 text-indigo-500" /> 加減分項目</h3>
@@ -434,6 +440,7 @@ const RedeemPanel = ({ redeemItems, selectedStudents, activeStudents, executeRed
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
+                    {/* Custom Redeem (Redesigned) */}
                     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                         <div className="flex justify-between items-center border-b pb-3 mb-4">
                             <h3 className="text-xl font-semibold text-gray-700 flex items-center"><Edit3 className="inline w-5 h-5 mr-2" /> 自定義兌換</h3>
@@ -451,6 +458,7 @@ const RedeemPanel = ({ redeemItems, selectedStudents, activeStudents, executeRed
                         </div>
                     </div>
 
+                    {/* Preset Redeem */}
                     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                         <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-4"><Gift className="inline w-5 h-5 mr-2" /> 預設兌換品</h3>
                         <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -519,6 +527,8 @@ const HistoryPanel = ({ scoreHistory, exportToCSV }) => (
 );
 
 const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelection, setActingStudent }) => {
+    // Determine which groups this student belongs to
+    // Legacy support: checks both groupIds (array) and groupId (string)
     const studentGroupNames = groups
         .filter(g => (student.groupIds || []).includes(g.id) || student.groupId === g.id)
         .map(g => g.name);
@@ -595,6 +605,7 @@ const GroupEditModal = ({ group, activeStudents, currentGroupStudents, setCurren
     );
 };
 
+// --- Undo Toast Component ---
 const UndoToast = ({ lastAction, onUndo, onClose }) => {
     if (!lastAction) return null;
     return (
@@ -610,6 +621,7 @@ const UndoToast = ({ lastAction, onUndo, onClose }) => {
     );
 };
 
+// --- Class Selection Component ---
 const ClassSelection = ({ classes, onCreateClass, onSelectClass, newClassName, setNewClassName }) => (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
         <h1 className="text-4xl font-extrabold text-gray-800 mb-8 flex items-center"><School className="w-10 h-10 mr-3 text-indigo-600"/> 選擇班級</h1>
@@ -652,12 +664,13 @@ const ClassSelection = ({ classes, onCreateClass, onSelectClass, newClassName, s
     </div>
 );
 
+
 // --- The Main App Component ---
 const App = () => {
     // Auth & Init
     const [db, setDb] = useState(null);
-    const [auth, setAuth] = useState(null);
-    const [user, setUser] = useState(null);
+    const [auth, setAuth] = useState(null); // Add auth state
+    const [user, setUser] = useState(null); // Add user object state
     const [userId, setUserId] = useState(null);
     const [isAuthReady, setIsAuthReady] = useState(false);
     
