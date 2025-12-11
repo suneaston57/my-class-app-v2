@@ -5,7 +5,15 @@ import { getFirestore, doc, setDoc, collection, query, onSnapshot, updateDoc, ar
 import { TrendingUp, TrendingDown, Users, Tag, Plus, Minus, CheckCircle, Gift, Loader, X, ExternalLink, CheckSquare, Square, Edit3, Trash2, Save, ArrowLeft, School, ArrowUpDown, RotateCcw, AlertTriangle, PenTool, LogIn, LogOut } from 'lucide-react';
 
 // --- Firebase Configuration & Initialization ---
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const firebaseConfig = {
+  apiKey: "AIzaSyCFRIBnUJH2Z8tOInRI5dCqBAkdBobDfyQ",
+  authDomain: "classmanagement-score.firebaseapp.com",
+  projectId: "classmanagement-score",
+  storageBucket: "classmanagement-score.firebasestorage.app",
+  messagingSenderId: "142763430728",
+  appId: "1:142763430728:web:60a9c265f543ed6de8597d",
+  measurementId: "G-5TYWM9B73Z"
+};
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-class-app';
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
