@@ -46,7 +46,7 @@ const ScoreDisplay = ({ totalScore, studentCount, userId, className }) => (
     </div>
 );
 
-// 優化後的學生卡片：更緊湊、分數更醒目
+// 優化後的學生卡片：自動換行顯示全名
 const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelection, setActingStudent }) => {
     const studentGroupNames = groups
         .filter(g => (student.groupIds || []).includes(g.id) || student.groupId === g.id)
@@ -54,7 +54,7 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
 
     return (
         <div 
-            className={`relative p-2 rounded-lg shadow-sm transition-all border flex flex-col justify-between h-[5.5rem] select-none
+            className={`relative p-2 rounded-lg shadow-sm transition-all border flex flex-col justify-between min-h-[6rem] select-none
             ${isSelected 
                 ? 'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-400' 
                 : 'bg-white hover:shadow-md border-gray-200'}
@@ -74,9 +74,10 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
                 {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5" />}
             </div>
             
-            <div className="flex flex-col h-full justify-between">
+            <div className="flex flex-col h-full justify-between relative">
                 <div className="pr-6">
-                    <div className="font-bold text-sm text-gray-800 truncate leading-tight tracking-tight">
+                    {/* 移除 truncate，加入 break-words 與 leading-tight，確保全名顯示 */}
+                    <div className="font-bold text-sm text-gray-800 leading-tight tracking-tight break-words">
                         {student.name}
                     </div>
                     
@@ -89,7 +90,8 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
                     </div>
                 </div>
                 
-                <div className="text-right -mt-1">
+                {/* Score - Big and prominent at bottom right */}
+                <div className="text-right -mt-1 absolute bottom-0 right-0">
                     <span className={`text-4xl font-black tracking-tighter leading-none ${student.score >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {student.score}
                     </span>
