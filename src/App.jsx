@@ -818,7 +818,6 @@ const App = () => {
     const handleGoogleLogin = async () => {
         if (!auth) return;
         const provider = new GoogleAuthProvider();
-        // Remove this line: provider.setCustomParameters({ prompt: 'select_account' });
         try {
             await signInWithPopup(auth, provider);
             setCurrentClass(null); 
