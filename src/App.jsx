@@ -5,8 +5,9 @@ import { getFirestore, doc, setDoc, collection, query, onSnapshot, updateDoc, ar
 import { TrendingUp, TrendingDown, Users, Tag, Plus, Minus, CheckCircle, Gift, Loader, X, ExternalLink, CheckSquare, Square, Edit3, Trash2, Save, ArrowLeft, School, ArrowUpDown, RotateCcw, AlertTriangle, PenTool, LogIn, LogOut } from 'lucide-react';
 
 // --- Firebase Configuration & Initialization ---
-// 注意：若要獨立運作，請將您的 Firebase Config 填入下方空物件中，或確保環境變數存在
-const firebaseConfig = {
+
+// 1. 定義您個人的 Firebase 設定 (用於部署後)
+const userFirebaseConfig = {
   apiKey: "AIzaSyCFRIBnUJH2Z8tOInRI5dCqBAkdBobDfyQ",
   authDomain: "classmanagement-score.firebaseapp.com",
   projectId: "classmanagement-score",
@@ -15,6 +16,10 @@ const firebaseConfig = {
   appId: "1:142763430728:web:60a9c265f543ed6de8597d",
   measurementId: "G-5TYWM9B73Z"
 };
+
+// 2. 自動判斷：如果有環境變數(在Canvas中)則使用環境變數，否則使用您的個人設定(在部署後)
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-class-app';
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -22,7 +27,7 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 
 const TabButton = ({ tab, current, setActive, children }) => (
     <button
-        className={`flex-1 py-3 px-3 rounded-xl font-semibold transition-colors duration-200 text-sm md:text-base whitespace-nowrap flex justify-center items-center
+        className={`flex-1 py-3 px-2 rounded-xl font-semibold transition-colors duration-200 text-sm whitespace-nowrap flex justify-center items-center
             ${current === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}
         onClick={() => setActive(tab)}
     >
@@ -31,20 +36,80 @@ const TabButton = ({ tab, current, setActive, children }) => (
 );
 
 const ScoreDisplay = ({ totalScore, studentCount, userId, className }) => (
-    <div className="bg-indigo-600 p-6 rounded-2xl shadow-2xl text-white mb-6 flex justify-between items-center relative overflow-hidden">
+    <div className="bg-indigo-600 p-5 rounded-2xl shadow-2xl text-white mb-6 flex justify-between items-center relative overflow-hidden">
         <div className="relative z-10">
-            <p className="text-xl font-light opacity-80 flex items-center gap-2"><School className="w-5 h-5"/> {className}</p>
+            <p className="text-lg font-light opacity-80 flex items-center gap-2"><School className="w-5 h-5"/> {className}</p>
             <p className="text-5xl font-extrabold mt-1">{totalScore}</p>
         </div>
         <div className="text-right relative z-10">
-            <p className="text-xl font-light opacity-80">學生總數</p>
+            <p className="text-lg font-light opacity-80">學生總數</p>
             <p className="text-3xl font-extrabold mt-1">{studentCount} 人</p>
-            <p className="text-xs opacity-60 mt-1">ID: {userId ? userId.substring(0, 6) : '...'}</p>
+            <p className="text-xs opacity-60 mt-1 truncate max-w-[100px]">ID: {userId ? userId.substring(0, 6) : '...'}</p>
         </div>
-        {/* Decorative Circle */}
         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-500 rounded-full opacity-50 z-0"></div>
     </div>
 );
+
+// 優化後的學生卡片：更緊湊、分數更醒目
+const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelection, setActingStudent }) => {
+    // Determine which groups this student belongs to
+    const studentGroupNames = groups
+        .filter(g => (student.groupIds || []).includes(g.id) || student.groupId === g.id)
+        .map(g => g.name);
+
+    return (
+        <div 
+            className={`relative p-2 rounded-lg shadow-sm transition-all border flex flex-col justify-between h-[5.5rem] select-none
+            ${isSelected 
+                ? 'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-400' 
+                : 'bg-white hover:shadow-md border-gray-200'}
+            ${isGroupAction ? 'opacity-90' : ''}`}
+            onClick={(e) => { 
+                // 如果是組別模式，點擊整張卡片也視為選取
+                if (isGroupAction) {
+                    // Do nothing here, selection handled by checkbox logic or parent, 
+                    // but we can make it user friendly:
+                    handleSelection(student.id);
+                } else {
+                    setActingStudent(student);
+                }
+            }}
+        >
+            {/* Checkbox - Absolute positioned for easy access in batch mode */}
+            <div 
+                className="absolute top-1 right-1 z-10 p-1 cursor-pointer text-gray-300 hover:text-indigo-500" 
+                onClick={(e) => { e.stopPropagation(); handleSelection(student.id); }}
+            >
+                {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5" />}
+            </div>
+            
+            {/* Main Area */}
+            <div className="flex flex-col h-full justify-between">
+                <div className="pr-6">
+                    <div className="font-bold text-sm text-gray-800 truncate leading-tight tracking-tight">
+                        {student.name}
+                    </div>
+                    
+                    {/* Groups - Tiny indicators */}
+                    <div className="flex flex-wrap gap-0.5 mt-0.5 h-3 overflow-hidden">
+                        {studentGroupNames.length > 0 && (
+                            <span className="text-[9px] text-gray-500 bg-gray-100 px-1 rounded-sm border border-gray-200 truncate max-w-full">
+                                {studentGroupNames[0]}{studentGroupNames.length > 1 ? '...' : ''}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Score - Big and prominent at bottom right */}
+                <div className="text-right -mt-1">
+                    <span className={`text-4xl font-black tracking-tighter leading-none ${student.score >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {student.score}
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const StudentActionPanel = ({ 
     isGroupAction, setIsGroupAction, 
@@ -65,101 +130,104 @@ const StudentActionPanel = ({
 
     return (
         <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-700">批量操作模式</h3>
+            <h3 className="text-xl font-bold text-gray-700">操作模式</h3>
 
-            <div className="flex space-x-4">
+            <div className="flex space-x-3">
                 <button
-                    className={`px-4 py-3 rounded-xl font-bold transition-colors w-1/2 flex items-center justify-center text-base md:text-lg shadow-sm ${!isGroupAction ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' : 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'}`}
+                    className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm flex items-center justify-center 
+                        ${!isGroupAction 
+                            ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' 
+                            : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => { setIsGroupAction(false); setSelectedGroup(''); }}
                 >
-                    <Users className="w-5 h-5 mr-2" /> 多選學生
+                    <Users className="w-4 h-4 mr-1.5" /> 多選學生
                 </button>
                 <button
-                    className={`px-4 py-3 rounded-xl font-bold transition-colors w-1/2 flex items-center justify-center text-base md:text-lg shadow-sm ${isGroupAction ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' : 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'}`}
+                    className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm flex items-center justify-center 
+                        ${isGroupAction 
+                            ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' 
+                            : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => { setIsGroupAction(true); setSelectedStudents([]); }}
                 >
-                    <Tag className="w-5 h-5 mr-2" /> 組別操作
+                    <Tag className="w-4 h-4 mr-1.5" /> 組別操作
                 </button>
             </div>
 
             {/* 操作對象顯示與選擇 */}
-            <div className="p-4 bg-white rounded-xl border border-gray-200 min-h-[5rem] shadow-sm">
-                {/* 1. 組別選擇模式：顯示所有組別按鈕 */}
+            <div className="p-3 bg-white rounded-xl border border-gray-200 min-h-[4rem] shadow-sm">
                 {isGroupAction && (
                     <div className="space-y-2">
-                        <p className="font-medium text-gray-600 mb-2">請點擊選擇一個組別：</p>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">請選擇組別</p>
                         <div className="flex flex-wrap gap-2">
                             {groups.map(group => (
                                 <button
                                     key={group.id}
                                     onClick={() => setSelectedGroup(group.id === selectedGroup ? '' : group.id)}
-                                    className={`px-4 py-2 rounded-lg border transition-all flex items-center font-medium
+                                    className={`px-3 py-1.5 rounded-lg border transition-all flex items-center font-medium text-sm
                                         ${selectedGroup === group.id 
-                                            ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-300 shadow-md' 
-                                            : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
                                 >
-                                    {selectedGroup === group.id && <CheckCircle className="w-4 h-4 mr-2"/>}
+                                    {selectedGroup === group.id && <CheckCircle className="w-3 h-3 mr-1.5"/>}
                                     {group.name} 
-                                    <span className="ml-1 text-xs opacity-75">({group.members.length}人)</span>
+                                    <span className="ml-1 text-xs opacity-60">({group.members.length})</span>
                                 </button>
                             ))}
-                            {groups.length === 0 && <span className="text-gray-400 italic text-sm">尚未建立組別</span>}
+                            {groups.length === 0 && <span className="text-gray-400 italic text-sm">無組別</span>}
                         </div>
                     </div>
                 )}
 
-                {/* 2. 多選學生模式：顯示已選名單 */}
                 {!isGroupAction && (
                     <>
                         <div className="flex justify-between items-center mb-2">
-                            <p className="font-medium text-gray-600">已選學生：</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">已選學生</p>
                             <button 
                                 onClick={handleSelectAll}
-                                className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-200 font-bold transition-colors"
+                                className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
                             >
                                 {selectedStudents.length > 0 && selectedStudents.length === activeStudents.length ? '取消全選' : '全選所有'}
                             </button>
                         </div>
                         {selectedStudents.length > 0 ? (
-                             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                                 {selectedStudents.length === activeStudents.length ? (
-                                    <span className="text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium w-full text-center">
-                                        已選取全體學生 ({activeStudents.length} 人)
+                                    <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded w-full text-center font-medium">
+                                        全體學生 ({activeStudents.length} 人)
                                     </span>
                                 ) : (
                                     activeStudents.filter(s => selectedStudents.includes(s.id)).map(s => (
-                                        <span key={s.id} className="text-sm bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1 rounded-full font-medium flex items-center">
+                                        <span key={s.id} className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 rounded flex items-center">
                                             {s.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-red-500" onClick={(e) => { e.stopPropagation(); setSelectedStudents(prev => prev.filter(id => id !== s.id)); }} />
                                         </span>
                                     ))
                                 )}
                              </div>
                         ) : (
-                            <p className="text-sm text-gray-400 italic">請勾選右側學生卡片。</p>
+                            <p className="text-xs text-gray-400 italic py-1">請在右側勾選</p>
                         )}
                     </>
                 )}
             </div>
 
-            {/* 加減分內容選擇與自定義區 */}
             <div className="border-t pt-4">
-                <h3 className="text-lg font-bold text-gray-700 mb-3">步驟 2：選擇或輸入分數</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">加減分內容</h3>
                 
                 {/* 1. 預設按鈕區 */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                     {customScoreItems.map(item => (
                         <button
                             key={item.id}
-                            className={`p-3 rounded-lg shadow-sm border transition-all relative overflow-hidden flex flex-col justify-center min-h-[4rem] active:scale-95
-                                ${scoreReason === item.reason ? 'bg-yellow-50 border-yellow-400 ring-2 ring-yellow-400' : 'bg-white border-gray-200 hover:bg-gray-50'}
+                            className={`p-2 rounded-lg shadow-sm border transition-all relative overflow-hidden flex flex-col justify-center min-h-[3.5rem] active:scale-95
+                                ${scoreReason === item.reason ? 'bg-yellow-50 border-yellow-400 ring-1 ring-yellow-400' : 'bg-white border-gray-200 hover:bg-gray-50'}
                             `}
                             onClick={() => { setScoreReason(item.reason); setScoreDelta(item.delta); }}
                         >
                             <div className="flex justify-between items-center w-full relative z-10 px-1">
-                                <span className="font-medium text-sm whitespace-normal text-left mr-1 leading-tight break-words flex-1 text-gray-800">
+                                <span className="font-medium text-xs whitespace-normal text-left mr-1 leading-tight break-words flex-1 text-gray-800">
                                     {item.reason}
                                 </span>
-                                <span className={`text-xl font-bold flex-shrink-0 ${item.type === 'plus' ? 'text-green-600' : 'text-red-500'}`}>
+                                <span className={`text-lg font-bold flex-shrink-0 ${item.type === 'plus' ? 'text-green-600' : 'text-red-500'}`}>
                                     {item.delta > 0 ? '+' : ''}{item.delta}
                                 </span>
                             </div>
@@ -167,61 +235,55 @@ const StudentActionPanel = ({
                     ))}
                 </div>
 
-                {/* 2. 手動輸入區 (Optimized for Tablet) */}
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-inner">
-                    <div className="flex items-center gap-2 mb-3 text-gray-600 font-bold text-sm">
-                        <Edit3 className="w-4 h-4"/>
-                        <span>自定義調整 (可直接修改)</span>
+                {/* 2. 手動輸入區 (Optimized) */}
+                <div className="flex flex-col gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2">
+                        <Edit3 className="w-3 h-3 text-gray-400"/>
+                        <span className="text-xs font-bold text-gray-500">自定義調整</span>
                     </div>
-                    <div className="flex flex-col gap-4">
-                        {/* 原因輸入 */}
+                    
+                    <input 
+                        type="text" 
+                        className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                        placeholder="輸入原因"
+                        value={scoreReason}
+                        onChange={(e) => setScoreReason(e.target.value)}
+                    />
+                    
+                    <div className="flex items-center gap-2">
+                        <button 
+                            className="w-10 h-10 rounded border border-gray-300 bg-white text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100 active:bg-gray-200"
+                            onClick={() => setScoreDelta(prev => prev - 1)}
+                        >
+                            <Minus className="w-4 h-4" />
+                        </button>
                         <input 
-                            type="text" 
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-base bg-white shadow-sm"
-                            placeholder="輸入原因 (或點選上方按鈕)"
-                            value={scoreReason}
-                            onChange={(e) => setScoreReason(e.target.value)}
+                            type="number" 
+                            className="flex-1 h-10 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-center text-lg bg-white"
+                            placeholder="0"
+                            value={scoreDelta}
+                            onChange={(e) => setScoreDelta(parseInt(e.target.value) || 0)}
                         />
-                        
-                        {/* 分數與按鈕 */}
-                        <div className="flex items-center gap-3">
-                            <span className="text-gray-500 font-bold whitespace-nowrap min-w-[3rem]">分數:</span>
-                            <div className="flex items-center flex-1 gap-2">
-                                <button 
-                                    className="w-12 h-12 rounded-lg bg-white border border-gray-300 text-gray-600 font-bold text-xl flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 shadow-sm"
-                                    onClick={() => setScoreDelta(prev => prev - 1)}
-                                >
-                                    <Minus className="w-5 h-5" />
-                                </button>
-                                <input 
-                                    type="number" 
-                                    className="flex-1 h-12 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-center text-xl bg-white shadow-sm"
-                                    placeholder="0"
-                                    value={scoreDelta}
-                                    onChange={(e) => setScoreDelta(parseInt(e.target.value) || 0)}
-                                />
-                                <button 
-                                    className="w-12 h-12 rounded-lg bg-white border border-gray-300 text-gray-600 font-bold text-xl flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 shadow-sm"
-                                    onClick={() => setScoreDelta(prev => prev + 1)}
-                                >
-                                    <Plus className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
+                        <button 
+                            className="w-10 h-10 rounded border border-gray-300 bg-white text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100 active:bg-gray-200"
+                            onClick={() => setScoreDelta(prev => prev + 1)}
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </div>
 
             <button
-                className={`w-full py-4 rounded-xl text-white font-bold text-xl shadow-lg transition-all duration-200 mt-2 flex items-center justify-center
+                className={`w-full py-3 rounded-xl text-white font-bold text-lg shadow-md transition-all duration-200 mt-2 flex items-center justify-center
                 ${(selectedStudents.length || (isGroupAction && selectedGroup)) && scoreDelta !== 0
-                        ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] hover:shadow-xl'
+                        ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]'
                         : 'bg-gray-300 cursor-not-allowed opacity-70'
                     }`}
                 disabled={(!selectedStudents.length && !(isGroupAction && selectedGroup)) || scoreDelta === 0}
                 onClick={executeBatchScoreAction}
             >
-               <CheckCircle className="w-6 h-6 mr-2" />
+               <CheckCircle className="w-5 h-5 mr-2" />
                執行：{scoreDelta > 0 ? '加' : (scoreDelta < 0 ? '減' : '變動')} {Math.abs(scoreDelta)} 分
             </button>
         </div>
@@ -423,6 +485,7 @@ const SetupPanel = ({
                                 <button className="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 flex items-center" onClick={() => { setIsEditingGroup(g); setCurrentGroupStudents(g.members); }}>
                                     <Users className="w-3 h-3 mr-1"/> 成員
                                 </button>
+                                {/* 根據需求，移除更名按鈕，僅保留成員管理和刪除 */}
                                 <button className="text-sm bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" onClick={(e) => handleDeleteGroup(e, g)}>
                                     <Trash2 className="w-4 h-4"/>
                                 </button>
@@ -556,36 +619,6 @@ const HistoryPanel = ({ scoreHistory, exportToCSV }) => (
     </div>
 );
 
-const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelection, setActingStudent }) => {
-    // Determine which groups this student belongs to
-    // Legacy support: checks both groupIds (array) and groupId (string)
-    const studentGroupNames = groups
-        .filter(g => (student.groupIds || []).includes(g.id) || student.groupId === g.id)
-        .map(g => g.name);
-
-    return (
-        <div className={`relative p-4 rounded-xl shadow-sm transition-all border
-            ${isSelected ? 'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-300' : 'bg-white hover:shadow-md border-gray-200'}
-            ${isGroupAction ? 'opacity-40' : ''}`}
-        >
-            <div className="absolute top-3 right-3 z-10 cursor-pointer text-gray-300 hover:text-indigo-500" onClick={(e) => { e.stopPropagation(); handleSelection(student.id); }}>
-                {isSelected ? <CheckSquare className="w-6 h-6 text-indigo-600" /> : <Square className="w-6 h-6" />}
-            </div>
-            <div className="cursor-pointer" onClick={() => { if (!isGroupAction) setActingStudent(student); }}>
-                <div className="font-semibold text-lg text-gray-800 pr-8 truncate">{student.name}</div>
-                <div className="flex justify-between items-end mt-2">
-                    <div className="flex flex-wrap gap-1">
-                        {studentGroupNames.length > 0 ? studentGroupNames.map(name => (
-                            <span key={name} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{name}</span>
-                        )) : <span className="text-xs text-gray-300">無分組</span>}
-                    </div>
-                    <div className={`text-3xl font-bold ${student.score >= 0 ? 'text-green-600' : 'text-red-600'}`}>{student.score}</div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const QuickActionModal = ({ student, customScoreItems, onClose, onExecute }) => {
     const [reason, setReason] = useState('');
     const [delta, setDelta] = useState('');
@@ -609,6 +642,27 @@ const QuickActionModal = ({ student, customScoreItems, onClose, onExecute }) => 
                     <div className="flex gap-2 mb-2"><input type="text" placeholder="自訂原因" className="flex-1 p-2 border rounded text-sm" value={reason} onChange={e => setReason(e.target.value)} /><input type="number" placeholder="分" className="w-16 p-2 border rounded text-sm" value={delta} onChange={e => setDelta(e.target.value)} /></div>
                     <button className="w-full bg-indigo-600 text-white py-2 rounded font-bold disabled:opacity-50" disabled={!delta} onClick={() => onExecute(parseInt(delta), reason || '手動')}>確認</button>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const GroupEditModal = ({ group, activeStudents, currentGroupStudents, setCurrentGroupStudents, onClose, onSave }) => {
+    const isMember = (id) => currentGroupStudents.includes(id);
+    const toggle = (id) => setCurrentGroupStudents(prev => isMember(id) ? prev.filter(m => m !== id) : [...prev, id]);
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+            <div className="bg-white rounded-xl w-full max-w-md p-6 h-[80vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-lg">編輯: {group.name}</h3><button onClick={onClose}><X className="w-6 h-6"/></button></div>
+                <p className="text-sm text-gray-500 mb-2">請勾選屬於此群組的學生（學生可屬於多個群組）。</p>
+                <div className="flex-1 overflow-y-auto space-y-2">
+                    {activeStudents.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true})).map(s => (
+                        <div key={s.id} onClick={() => toggle(s.id)} className={`p-3 rounded border flex justify-between cursor-pointer ${isMember(s.id) ? 'bg-indigo-100 border-indigo-500' : 'bg-white'}`}>
+                            <span>{s.name}</span>{isMember(s.id) && <CheckCircle className="w-5 h-5 text-indigo-600"/>}
+                        </div>
+                    ))}
+                </div>
+                <button className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-lg font-bold" onClick={onSave}>儲存 ({currentGroupStudents.length}人)</button>
             </div>
         </div>
     );
@@ -678,8 +732,8 @@ const ClassSelection = ({ classes, onCreateClass, onSelectClass, newClassName, s
 const App = () => {
     // Auth & Init
     const [db, setDb] = useState(null);
-    const [auth, setAuth] = useState(null);
-    const [user, setUser] = useState(null);
+    const [auth, setAuth] = useState(null); // Add auth state
+    const [user, setUser] = useState(null); // Add user object state
     const [userId, setUserId] = useState(null);
     const [isAuthReady, setIsAuthReady] = useState(false);
     
@@ -758,6 +812,7 @@ const App = () => {
     const handleGoogleLogin = async () => {
         if (!auth) return;
         const provider = new GoogleAuthProvider();
+        // Remove this line to restore default behavior: provider.setCustomParameters({ prompt: 'select_account' });
         try {
             await signInWithPopup(auth, provider);
             setCurrentClass(null); 
@@ -825,8 +880,10 @@ const App = () => {
         setCurrentClass(null);
     };
 
+    // Student CRUD
     const addStudent = async () => {
         if (!newStudentName.trim()) return;
+        // Use groupIds array for multiple groups support
         await setDoc(doc(getStudentColRef(db, userId, currentClass.id)), { name: newStudentName.trim(), score: 0, groupIds: [], createdAt: new Date() });
         setNewStudentName('');
     };
@@ -854,6 +911,7 @@ const App = () => {
         }
     };
 
+    // Group CRUD
     const addGroup = async () => {
         if(!newGroupName.trim()) return;
         const newG = { id: Date.now().toString(), name: newGroupName.trim(), members: [] };
@@ -883,6 +941,7 @@ const App = () => {
         const gid = isEditingGroup.id;
         const studentRef = (sid) => doc(getStudentColRef(db, userId, cid), sid);
         
+        // Logic: for every active student, if they are in currentGroupStudents -> add gid, else -> remove gid
         const active = students.filter(s => !s.isDeleted);
         const batchPromises = active.map(s => {
             if (currentGroupStudents.includes(s.id)) {
@@ -899,18 +958,21 @@ const App = () => {
         setIsEditingGroup(false);
     };
 
+    // Scoring & Undo
     const handleScoreUpdate = async (targetStudents, delta, reason, typeLabel, isUndo = false) => {
         if(targetStudents.length === 0) return;
         const cid = currentClass.id;
         
         const batch = targetStudents.map(s => updateDoc(doc(getStudentColRef(db, userId, cid), s.id), { score: s.score + delta }));
         
+        // Only log history if not an undo action (or log undo explicitly)
         if (!isUndo) {
             batch.push(setDoc(doc(getHistoryColRef(db, userId, cid)), {
                 type: delta > 0 ? '加分' : '減分', delta, reason, 
                 targets: targetStudents.map(s => s.name), targetIds: targetStudents.map(s => s.id),
                 actionType: typeLabel, timestamp: new Date()
             }));
+            // Set undo state - store ID only to avoid stale data
             setLastAction({
                 type: 'score',
                 targetIds: targetStudents.map(s => s.id),
@@ -936,6 +998,7 @@ const App = () => {
         if (isGroupAction && selectedGroup) {
             const grp = groups.find(g => g.id === selectedGroup);
             if (grp) {
+                // Check if student's groupIds contains selectedGroup or legacy groupId matches
                 targets = students.filter(s => ((s.groupIds || []).includes(selectedGroup) || s.groupId === selectedGroup) && !s.isDeleted);
                 label = `組別: ${grp.name}`;
             }
@@ -970,6 +1033,7 @@ const App = () => {
         if (!lastAction) return;
         const { targetIds, delta, reason } = lastAction;
         
+        // Find fresh student objects based on IDs
         const currentTargets = students.filter(s => targetIds.includes(s.id));
         
         if (currentTargets.length === 0) {
@@ -978,10 +1042,14 @@ const App = () => {
             return;
         }
 
+        // Inverse delta: if original was +3, we do -3. 
+        // Logic: we apply -delta to current score.
+        // e.g., Score was 0 -> +3 = 3. Undo: 3 + (-3) = 0. Correct.
         await handleScoreUpdate(currentTargets, -delta, reason, '復原', true);
         setLastAction(null);
     };
 
+    // Item Config Handlers
     const saveScoreItem = async (r, d, t, id) => {
         const items = id ? customScoreItems.map(i => i.id === id ? {id, reason:r, delta:d, type:t} : i) : [...customScoreItems, {id: Date.now().toString(), reason:r, delta:d, type:t}];
         await updateDoc(getScoreItemsRef(db, userId, currentClass.id), { items });
@@ -1008,6 +1076,8 @@ const App = () => {
         link.click();
     };
 
+
+    // --- Computed Data ---
     const activeStudents = useMemo(() => students.filter(s => !s.isDeleted), [students]);
     const sortedStudents = useMemo(() => {
         const list = [...activeStudents];
@@ -1033,6 +1103,7 @@ const App = () => {
 
             <div className="container mx-auto p-4 sm:p-6 lg:p-8">
                 <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Left Sidebar */}
                     <div className="lg:w-1/3 space-y-6">
                         <ScoreDisplay totalScore={totalScore} studentCount={activeStudents.length} userId={userId} className={currentClass.name} />
                         
@@ -1060,6 +1131,7 @@ const App = () => {
                         </div>
                     </div>
 
+                    {/* Right Content */}
                     <div className="lg:w-2/3">
                         {(activeTab === 'score' || activeTab === 'redeem') && (
                             <>
@@ -1084,7 +1156,8 @@ const App = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[80vh] overflow-y-auto p-1">
+                                {/* 學生列表排版優化：High Density Grid */}
+                                <div className="grid grid-cols-2 min-[450px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 max-h-[80vh] overflow-y-auto p-1">
                                     {sortedStudents.map(student => (
                                         <StudentCard 
                                             key={student.id} 
@@ -1119,6 +1192,7 @@ const App = () => {
                 </div>
             </div>
 
+            {/* Floating UI */}
             <UndoToast lastAction={lastAction} onUndo={handleUndo} onClose={() => setLastAction(null)} />
             {isEditingGroup && <GroupEditModal group={isEditingGroup} activeStudents={activeStudents} currentGroupStudents={currentGroupStudents} setCurrentGroupStudents={setCurrentGroupStudents} onClose={() => { setIsEditingGroup(false); setCurrentGroupStudents([]); }} onSave={updateGroupMembers} />}
             {actingStudent && <QuickActionModal student={actingStudent} customScoreItems={customScoreItems} onClose={() => setActingStudent(null)} onExecute={async (d, r) => { await handleScoreUpdate([actingStudent], d, r, '快速'); setActingStudent(null); }} />}
