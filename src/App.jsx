@@ -5,8 +5,6 @@ import { getFirestore, doc, setDoc, collection, query, onSnapshot, updateDoc, ar
 import { TrendingUp, TrendingDown, Users, Tag, Plus, Minus, CheckCircle, Gift, Loader, X, ExternalLink, CheckSquare, Square, Edit3, Trash2, Save, ArrowLeft, School, ArrowUpDown, RotateCcw, AlertTriangle, PenTool, LogIn, LogOut } from 'lucide-react';
 
 // --- Firebase Configuration & Initialization ---
-
-// 1. 定義您個人的 Firebase 設定 (用於部署後)
 const userFirebaseConfig = {
   apiKey: "AIzaSyCFRIBnUJH2Z8tOInRI5dCqBAkdBobDfyQ",
   authDomain: "classmanagement-score.firebaseapp.com",
@@ -17,9 +15,7 @@ const userFirebaseConfig = {
   measurementId: "G-5TYWM9B73Z"
 };
 
-// 2. 自動判斷：如果有環境變數(在Canvas中)則使用環境變數，否則使用您的個人設定(在部署後)
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
-
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-class-app';
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -52,7 +48,6 @@ const ScoreDisplay = ({ totalScore, studentCount, userId, className }) => (
 
 // 優化後的學生卡片：更緊湊、分數更醒目
 const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelection, setActingStudent }) => {
-    // Determine which groups this student belongs to
     const studentGroupNames = groups
         .filter(g => (student.groupIds || []).includes(g.id) || student.groupId === g.id)
         .map(g => g.name);
@@ -65,17 +60,13 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
                 : 'bg-white hover:shadow-md border-gray-200'}
             ${isGroupAction ? 'opacity-90' : ''}`}
             onClick={(e) => { 
-                // 如果是組別模式，點擊整張卡片也視為選取
                 if (isGroupAction) {
-                    // Do nothing here, selection handled by checkbox logic or parent, 
-                    // but we can make it user friendly:
                     handleSelection(student.id);
                 } else {
                     setActingStudent(student);
                 }
             }}
         >
-            {/* Checkbox - Absolute positioned for easy access in batch mode */}
             <div 
                 className="absolute top-1 right-1 z-10 p-1 cursor-pointer text-gray-300 hover:text-indigo-500" 
                 onClick={(e) => { e.stopPropagation(); handleSelection(student.id); }}
@@ -83,14 +74,12 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
                 {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5" />}
             </div>
             
-            {/* Main Area */}
             <div className="flex flex-col h-full justify-between">
                 <div className="pr-6">
                     <div className="font-bold text-sm text-gray-800 truncate leading-tight tracking-tight">
                         {student.name}
                     </div>
                     
-                    {/* Groups - Tiny indicators */}
                     <div className="flex flex-wrap gap-0.5 mt-0.5 h-3 overflow-hidden">
                         {studentGroupNames.length > 0 && (
                             <span className="text-[9px] text-gray-500 bg-gray-100 px-1 rounded-sm border border-gray-200 truncate max-w-full">
@@ -100,7 +89,6 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
                     </div>
                 </div>
                 
-                {/* Score - Big and prominent at bottom right */}
                 <div className="text-right -mt-1">
                     <span className={`text-4xl font-black tracking-tighter leading-none ${student.score >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {student.score}
@@ -153,7 +141,6 @@ const StudentActionPanel = ({
                 </button>
             </div>
 
-            {/* 操作對象顯示與選擇 */}
             <div className="p-3 bg-white rounded-xl border border-gray-200 min-h-[4rem] shadow-sm">
                 {isGroupAction && (
                     <div className="space-y-2">
@@ -213,7 +200,6 @@ const StudentActionPanel = ({
             <div className="border-t pt-4">
                 <h3 className="text-sm font-bold text-gray-700 mb-2">加減分內容</h3>
                 
-                {/* 1. 預設按鈕區 */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                     {customScoreItems.map(item => (
                         <button
@@ -235,7 +221,6 @@ const StudentActionPanel = ({
                     ))}
                 </div>
 
-                {/* 2. 手動輸入區 (Optimized) */}
                 <div className="flex flex-col gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center gap-2">
                         <Edit3 className="w-3 h-3 text-gray-400"/>
@@ -380,7 +365,7 @@ const SetupPanel = ({
     // 移除更名功能，僅保留刪除與成員管理
     const handleDeleteGroup = (e, group) => {
         e.stopPropagation();
-        if(confirm(`確定刪除群組「${group.name}」嗎？這會同時移除所有學生的此群組標籤。`)) {
+        if(window.confirm(`確定刪除群組「${group.name}」嗎？這會同時移除所有學生的此群組標籤。`)) {
             deleteGroup(group.id);
         }
     };
@@ -413,13 +398,13 @@ const SetupPanel = ({
              </div>
              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                  <button 
-                    onClick={() => { if(confirm('確定要將全班所有學生的分數歸零嗎？這將無法復原。')) resetAllScores(); }}
+                    onClick={() => { if(window.confirm('確定要將全班所有學生的分數歸零嗎？這將無法復原。')) resetAllScores(); }}
                     className="text-white bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-sm flex items-center justify-center font-bold w-full sm:w-auto"
                  >
                     <RotateCcw className="w-4 h-4 mr-1"/> 全班分數歸零
                  </button>
                  <button 
-                    onClick={() => { if(confirm('確定要刪除整個班級嗎？所有資料將消失。')) deleteClass(); }}
+                    onClick={() => { if(window.confirm('確定要刪除整個班級嗎？所有資料將消失。')) deleteClass(); }}
                     className="text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm flex items-center justify-center font-bold w-full sm:w-auto"
                  >
                     <Trash2 className="w-4 h-4 mr-1"/> 刪除此班級
@@ -592,7 +577,7 @@ const RedeemPanel = ({ redeemItems, selectedStudents, activeStudents, executeRed
     );
 };
 
-const HistoryPanel = ({ scoreHistory, exportToCSV }) => (
+const HistoryPanel = ({ scoreHistory, exportToCSV, onDelete }) => (
     <div className="space-y-6">
         <h2 className="text-3xl font-bold text-gray-800">歷史記錄</h2>
         <div className="flex justify-end">
@@ -603,7 +588,7 @@ const HistoryPanel = ({ scoreHistory, exportToCSV }) => (
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
             {scoreHistory.map(h => (
                 <div key={h.id} className={`p-3 rounded-lg border flex justify-between items-center ${h.delta > 0 ? 'bg-green-50 border-green-200' : h.type === '兌換' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
-                    <div>
+                    <div className="flex-grow">
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-gray-800">{h.type}</span>
                             <span className="text-sm text-gray-600">({h.reason})</span>
@@ -611,7 +596,17 @@ const HistoryPanel = ({ scoreHistory, exportToCSV }) => (
                         <p className="text-xs text-gray-500">{h.targets.join(', ')} • {new Date(h.timestamp).toLocaleString('zh-TW')}</p>
                         {h.note && <p className="text-xs text-gray-400">備註: {h.note}</p>}
                     </div>
-                    <span className={`text-xl font-bold ${h.delta > 0 ? 'text-green-600' : 'text-red-600'}`}>{h.delta > 0 ? '+' : ''}{h.delta}</span>
+                    <div className="flex items-center gap-3">
+                        <span className={`text-xl font-bold ${h.delta > 0 ? 'text-green-600' : 'text-red-600'}`}>{h.delta > 0 ? '+' : ''}{h.delta}</span>
+                        {/* 垃圾桶按鈕：使用傳入的 onDelete */}
+                        <button 
+                            onClick={() => onDelete(h)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                            title="刪除此紀錄並復原分數"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             ))}
             {scoreHistory.length === 0 && <p className="text-center text-gray-400 py-4">無記錄</p>}
@@ -668,11 +663,20 @@ const GroupEditModal = ({ group, activeStudents, currentGroupStudents, setCurren
     );
 };
 
-// --- Undo Toast Component ---
+// --- Undo Toast Component (Updated with 5s Timer) ---
 const UndoToast = ({ lastAction, onUndo, onClose }) => {
+    useEffect(() => {
+        if (lastAction) {
+            const timer = setTimeout(() => {
+                onClose();
+            }, 5000); // 5秒後自動消失
+            return () => clearTimeout(timer);
+        }
+    }, [lastAction, onClose]);
+
     if (!lastAction) return null;
     return (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white pl-6 pr-4 py-3 rounded-full shadow-2xl flex items-center z-50 animate-bounce-small">
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white pl-6 pr-4 py-3 rounded-full shadow-2xl flex items-center z-50 animate-bounce-small transition-opacity duration-500">
             <span className="text-sm mr-4">已執行：{lastAction.type} {lastAction.reason}</span>
             <button onClick={onUndo} className="flex items-center text-yellow-400 font-bold hover:text-yellow-300 mr-4">
                 <RotateCcw className="w-4 h-4 mr-1"/> 復原
@@ -760,7 +764,7 @@ const App = () => {
     const [sortMethod, setSortMethod] = useState('number'); 
 
     // Undo State
-    const [lastAction, setLastAction] = useState(null); // { type: 'score'|'redeem', targetIds: [], delta: 0, reason: '' }
+    const [lastAction, setLastAction] = useState(null); 
 
     // Form Inputs
     const [newStudentName, setNewStudentName] = useState('');
@@ -812,7 +816,7 @@ const App = () => {
     const handleGoogleLogin = async () => {
         if (!auth) return;
         const provider = new GoogleAuthProvider();
-        // Remove this line to restore default behavior: provider.setCustomParameters({ prompt: 'select_account' });
+        // Remove this line: provider.setCustomParameters({ prompt: 'select_account' });
         try {
             await signInWithPopup(auth, provider);
             setCurrentClass(null); 
@@ -880,10 +884,8 @@ const App = () => {
         setCurrentClass(null);
     };
 
-    // Student CRUD
     const addStudent = async () => {
         if (!newStudentName.trim()) return;
-        // Use groupIds array for multiple groups support
         await setDoc(doc(getStudentColRef(db, userId, currentClass.id)), { name: newStudentName.trim(), score: 0, groupIds: [], createdAt: new Date() });
         setNewStudentName('');
     };
@@ -941,7 +943,6 @@ const App = () => {
         const gid = isEditingGroup.id;
         const studentRef = (sid) => doc(getStudentColRef(db, userId, cid), sid);
         
-        // Logic: for every active student, if they are in currentGroupStudents -> add gid, else -> remove gid
         const active = students.filter(s => !s.isDeleted);
         const batchPromises = active.map(s => {
             if (currentGroupStudents.includes(s.id)) {
@@ -958,21 +959,18 @@ const App = () => {
         setIsEditingGroup(false);
     };
 
-    // Scoring & Undo
     const handleScoreUpdate = async (targetStudents, delta, reason, typeLabel, isUndo = false) => {
         if(targetStudents.length === 0) return;
         const cid = currentClass.id;
         
         const batch = targetStudents.map(s => updateDoc(doc(getStudentColRef(db, userId, cid), s.id), { score: s.score + delta }));
         
-        // Only log history if not an undo action (or log undo explicitly)
         if (!isUndo) {
             batch.push(setDoc(doc(getHistoryColRef(db, userId, cid)), {
                 type: delta > 0 ? '加分' : '減分', delta, reason, 
                 targets: targetStudents.map(s => s.name), targetIds: targetStudents.map(s => s.id),
                 actionType: typeLabel, timestamp: new Date()
             }));
-            // Set undo state - store ID only to avoid stale data
             setLastAction({
                 type: 'score',
                 targetIds: targetStudents.map(s => s.id),
@@ -991,6 +989,31 @@ const App = () => {
         return true;
     };
 
+    const deleteHistoryItem = async (historyItem) => {
+        if (!window.confirm('確定要刪除此紀錄並復原分數變更嗎？')) return;
+        
+        try {
+            const cid = currentClass.id;
+            const batch = writeBatch(db);
+
+            historyItem.targetIds.forEach(sid => {
+                const student = students.find(s => s.id === sid);
+                if (student) {
+                     const studentRef = doc(getStudentColRef(db, userId, cid), sid);
+                     batch.update(studentRef, { score: student.score - historyItem.delta });
+                }
+            });
+
+            const historyRef = doc(getHistoryColRef(db, userId, cid), historyItem.id);
+            batch.delete(historyRef);
+
+            await batch.commit();
+        } catch (error) {
+            console.error("Error deleting history item:", error);
+            alert("刪除失敗，請稍後再試。");
+        }
+    };
+
     const executeBatch = async () => {
         let targets = [];
         let label = '';
@@ -998,7 +1021,6 @@ const App = () => {
         if (isGroupAction && selectedGroup) {
             const grp = groups.find(g => g.id === selectedGroup);
             if (grp) {
-                // Check if student's groupIds contains selectedGroup or legacy groupId matches
                 targets = students.filter(s => ((s.groupIds || []).includes(selectedGroup) || s.groupId === selectedGroup) && !s.isDeleted);
                 label = `組別: ${grp.name}`;
             }
@@ -1033,7 +1055,6 @@ const App = () => {
         if (!lastAction) return;
         const { targetIds, delta, reason } = lastAction;
         
-        // Find fresh student objects based on IDs
         const currentTargets = students.filter(s => targetIds.includes(s.id));
         
         if (currentTargets.length === 0) {
@@ -1042,14 +1063,10 @@ const App = () => {
             return;
         }
 
-        // Inverse delta: if original was +3, we do -3. 
-        // Logic: we apply -delta to current score.
-        // e.g., Score was 0 -> +3 = 3. Undo: 3 + (-3) = 0. Correct.
         await handleScoreUpdate(currentTargets, -delta, reason, '復原', true);
         setLastAction(null);
     };
 
-    // Item Config Handlers
     const saveScoreItem = async (r, d, t, id) => {
         const items = id ? customScoreItems.map(i => i.id === id ? {id, reason:r, delta:d, type:t} : i) : [...customScoreItems, {id: Date.now().toString(), reason:r, delta:d, type:t}];
         await updateDoc(getScoreItemsRef(db, userId, currentClass.id), { items });
@@ -1076,8 +1093,6 @@ const App = () => {
         link.click();
     };
 
-
-    // --- Computed Data ---
     const activeStudents = useMemo(() => students.filter(s => !s.isDeleted), [students]);
     const sortedStudents = useMemo(() => {
         const list = [...activeStudents];
@@ -1156,7 +1171,7 @@ const App = () => {
                                     </div>
                                 </div>
                                 
-                                {/* 學生列表排版優化：High Density Grid */}
+                                {/* 學生列表排版優化：High Density Grid (Responsive) */}
                                 <div className="grid grid-cols-2 min-[450px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 max-h-[80vh] overflow-y-auto p-1">
                                     {sortedStudents.map(student => (
                                         <StudentCard 
@@ -1187,12 +1202,12 @@ const App = () => {
                             deleteClass={deleteClass} currentClass={currentClass} resetAllScores={resetAllScores}
                             user={user} handleGoogleLogin={handleGoogleLogin} handleLogout={handleLogout}
                         />}
-                        {activeTab === 'history' && <HistoryPanel scoreHistory={scoreHistory} exportToCSV={exportCSV} />}
+                        {/* 修正點：將 deleteHistoryItem 傳遞給 HistoryPanel */}
+                        {activeTab === 'history' && <HistoryPanel scoreHistory={scoreHistory} exportToCSV={exportCSV} onDelete={deleteHistoryItem} />}
                     </div>
                 </div>
             </div>
 
-            {/* Floating UI */}
             <UndoToast lastAction={lastAction} onUndo={handleUndo} onClose={() => setLastAction(null)} />
             {isEditingGroup && <GroupEditModal group={isEditingGroup} activeStudents={activeStudents} currentGroupStudents={currentGroupStudents} setCurrentGroupStudents={setCurrentGroupStudents} onClose={() => { setIsEditingGroup(false); setCurrentGroupStudents([]); }} onSave={updateGroupMembers} />}
             {actingStudent && <QuickActionModal student={actingStudent} customScoreItems={customScoreItems} onClose={() => setActingStudent(null)} onExecute={async (d, r) => { await handleScoreUpdate([actingStudent], d, r, '快速'); setActingStudent(null); }} />}
