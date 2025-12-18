@@ -76,7 +76,7 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
             
             <div className="flex flex-col h-full justify-between relative">
                 <div className="pr-6">
-                    {/* 移除 truncate，加入 break-words 與 leading-tight，確保全名顯示 */}
+                    {/* 關鍵修改：移除 truncate，加入 break-words 與 leading-tight，確保全名顯示 */}
                     <div className="font-bold text-sm text-gray-800 leading-tight tracking-tight break-words">
                         {student.name}
                     </div>
@@ -818,6 +818,7 @@ const App = () => {
     const handleGoogleLogin = async () => {
         if (!auth) return;
         const provider = new GoogleAuthProvider();
+        // Remove this line: provider.setCustomParameters({ prompt: 'select_account' });
         try {
             await signInWithPopup(auth, provider);
             setCurrentClass(null); 
