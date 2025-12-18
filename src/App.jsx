@@ -76,7 +76,7 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
             
             <div className="flex flex-col h-full justify-between relative">
                 <div className="pr-6">
-                    {/* 關鍵修改：移除 truncate，加入 break-words 與 leading-tight，確保全名顯示 */}
+                    {/* 確保全名顯示 */}
                     <div className="font-bold text-sm text-gray-800 leading-tight tracking-tight break-words">
                         {student.name}
                     </div>
@@ -90,7 +90,6 @@ const StudentCard = ({ student, isSelected, isGroupAction, groups, handleSelecti
                     </div>
                 </div>
                 
-                {/* Score - Big and prominent at bottom right */}
                 <div className="text-right -mt-1 absolute bottom-0 right-0">
                     <span className={`text-4xl font-black tracking-tighter leading-none ${student.score >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {student.score}
@@ -818,7 +817,6 @@ const App = () => {
     const handleGoogleLogin = async () => {
         if (!auth) return;
         const provider = new GoogleAuthProvider();
-        // Remove this line: provider.setCustomParameters({ prompt: 'select_account' });
         try {
             await signInWithPopup(auth, provider);
             setCurrentClass(null); 
@@ -1173,8 +1171,8 @@ const App = () => {
                                     </div>
                                 </div>
                                 
-                                {/* 學生列表排版優化：High Density Grid (Responsive) */}
-                                <div className="grid grid-cols-2 min-[450px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 max-h-[80vh] overflow-y-auto p-1">
+                                {/* 學生列表排版優化：iPad 橫向強制 5 欄 */}
+                                <div className="grid grid-cols-2 min-[450px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 max-h-[80vh] overflow-y-auto p-1">
                                     {sortedStudents.map(student => (
                                         <StudentCard 
                                             key={student.id} 
@@ -1204,7 +1202,7 @@ const App = () => {
                             deleteClass={deleteClass} currentClass={currentClass} resetAllScores={resetAllScores}
                             user={user} handleGoogleLogin={handleGoogleLogin} handleLogout={handleLogout}
                         />}
-                        {/* 修正點：將 deleteHistoryItem 傳遞給 HistoryPanel */}
+                        {/* 修復：補上 onDelete 屬性 */}
                         {activeTab === 'history' && <HistoryPanel scoreHistory={scoreHistory} exportToCSV={exportCSV} onDelete={deleteHistoryItem} />}
                     </div>
                 </div>
